@@ -4,20 +4,7 @@ import pandas as pd
 import time
 import date_util
 
-# use the present date,
-# fetch it as csv.
 
-# Historical data until the last year in the CSV.
-
-# Two versions:
-# 1. Historical
-# 2. Daily fetch of the data.
-
-
-start, end = date_util.get_datetime_bounds(date_util.get_yesterday_date())
-unix_start = date_util.convert_date_str_to_unix(start)
-
-# Create pandas data frame and clean data
 COLUMN_NAMES = ['time', 'open', 'close', 'high', 'low', 'volume']
 INTERVAL = '1m'
 SYMBOL = 'btcusd'
