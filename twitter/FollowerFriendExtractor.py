@@ -20,18 +20,27 @@ api = tweepy.API(auth)
 ## api.followers -> returns the entire user objects. will be heavy.
 
 follower_ids = []
+
+twitter_handles = ['Elon','Bezon']
 for page in tweepy.Cursor(api.followers_ids, screen_name="surendhar7").pages():
     follower_ids.extend(page)
     time.sleep(60)
-
 print (follower_ids)
+#
+# friend_ids = []
+# for page in tweepy.Cursor(api.friends_ids, screen_name="surendhar7").pages():
+#     friend_ids.extend(page)
+#     time.sleep(60)
 
-friend_ids = []
-for page in tweepy.Cursor(api.friends_ids, screen_name="surendhar7").pages():
-    friend_ids.extend(page)
+tweets = []
+for page in tweepy.Cursor(api.search,q='#bitcoin').pages():
+    tweets.extend(page)
     time.sleep(60)
 
-print(friend_ids)
+print(tweets)
+print(len(tweets))
+
+# print(friend_ids)
 
 ## Need to confirm the data we need to parse for neo4j to do centrality algo/community detection
 
