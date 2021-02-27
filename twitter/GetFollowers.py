@@ -100,7 +100,7 @@ if __name__ == "__main__":
             time.sleep(60 * 15)
             main()
         finally:
-            print('File1 for user_id {} eExported. Loading File1...'.format(user_id))
+            print('File1 for user_id {} exported. Loading File1...'.format(user_id))
 
         data = load_data_from_json("followers{}.json".format(currfilecount))
         print('Getting subsequent files...')
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         for f in files:
             if(f.startswith("followers")):
                 shutil.move(f,dest)
-        print("files moves into user_id {} folder".format(user_id))
+        print("files moved into user_id {} folder".format(user_id))
 
 
 #time.sleep(60*15)
