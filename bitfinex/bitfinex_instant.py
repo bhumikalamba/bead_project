@@ -2,8 +2,9 @@ import argparse
 import bitfinex
 import pandas as pd
 import time
-import date_util
-
+import lib.date_util as date_util
+from lib.database import db
+from models.facts_bitfinex import FactsBitcoinPrice
 
 COLUMN_NAMES = ['time', 'open', 'close', 'high', 'low', 'volume']
 INTERVAL = '1m'
@@ -12,7 +13,7 @@ TICK_LIMIT = 1000
 GRANULARITY_IN_MIN = 60  # minutes. (1 HOUR = 60 MIN)
 UNIT_STEP = 60000  # interval of every minute. multiply it by number of minutes.
 STEP = GRANULARITY_IN_MIN * UNIT_STEP
-
+LOCAL_TIMEZONE = 'Asia/Singapore'
 SAVE_PATH = './data'
 PATH = '{}/bitfinex_{}.csv'.format(SAVE_PATH, SYMBOL)
 
@@ -20,8 +21,13 @@ PATH = '{}/bitfinex_{}.csv'.format(SAVE_PATH, SYMBOL)
 def convert_to_df(data):
     df = pd.DataFrame(data, columns=COLUMN_NAMES)
     df.drop_duplicates(inplace=True)
+    # UTC Time with time zone aware
     df['time'] = pd.to_datetime(df['time'], unit='ms')
+    df['time'] = df['time'].dt.tz_localize('UTC')
     df.set_index('time', inplace=False)
+    df['time'] = df['time'].dt.tz_convert(LOCAL_TIMEZONE)
+    df['id_date'] = df.apply(date_util.convert_time_stamp_to_int_date, axis=1)
+
     df = df.sort_values(by='time')
     return df
 
@@ -36,6 +42,7 @@ def fetch_historical_candle_data(start, stop, symbol, interval, tick_limit, step
     while start < stop:
         end = start + step
         res = api_v2.candles(symbol=symbol, interval=interval, limit=tick_limit, start=start, end=end)
+        print(res)
         data.extend(res)
 
         print('Retrieving data from {} to {} for {}'.format(pd.to_datetime(start, unit='ms'),
@@ -62,6 +69,10 @@ def fetch_candle_data(start_date):
     end_date_unix = date_util.convert_date_str_to_unix(str(end_date) + ' 00:00') * 1000
 
     df = fetch_historical_candle_data(start_date_unix, end_date_unix, SYMBOL, INTERVAL, TICK_LIMIT, STEP)
+
+    for index, row in df.iterrows():
+        FactsBitcoinPrice.load_bitcoin_price(row)
+
     print('Done downloading data. Saving to .csv.')
     df.to_csv(PATH)
     print(PATH)
