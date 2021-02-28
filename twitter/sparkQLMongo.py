@@ -20,5 +20,5 @@ df.printSchema()
 
 print(df.count())
 
-#df.show(430)
+#df.show(4)
 
