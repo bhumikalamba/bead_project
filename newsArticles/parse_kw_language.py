@@ -118,10 +118,30 @@ articles_clean.show(n=5,truncate=True)
 # save DataFrame as orc format in data store
 job_datetime = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
+
 print("saving DataFrame to " + my_output_file_path + "/" + job_datetime + "...")
+''' This option saves file as orc format
 articles_clean.write.format("orc") \
     .mode("overwrite") \
     .save(os.path.join(my_output_file_path, job_datetime))
+'''
+''' This option saves file as json format
+articles_clean.write.format("json") \
+    .mode("overwrite") \
+    .save(os.path.join(my_output_file_path, job_datetime))
+'''
+''' This option saves file as Parquet format'''
+articles_clean.write.format("parquet") \
+    .mode("overwrite") \
+    .save(os.path.join(my_output_file_path, job_datetime))
+''''''
+''' This option saves file as CSV format. Note: Doesn't work. CSV does not support array data type.
+articles_clean.write.format("csv") \
+    .option("header","true") \
+    .option("sep",",") \
+    .mode("overwrite") \
+    .save(os.path.join(my_output_file_path, job_datetime))
+'''
 print("done!")
 
 # remove the batch of json files, proceed only if you are sure!
