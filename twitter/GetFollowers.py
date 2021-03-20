@@ -1,7 +1,8 @@
 # Fetching the followers list
-# initial code from https://github.com/twitterdev/Twitter-API-v2-sample-code/blob/master/Follows-Lookup/followers_lookup.py
-
+# rate limit 15 request in 15 minutes, 5000 each requests (i.e. 75K follower_ids could be extracted per 15 minutes window)
 # notes on rate limits: https://stackoverflow.com/questions/58542763/twitter-api-efficient-way-to-get-followers-lists-for-accounts-with-few-million
+
+# initial code from https://github.com/twitterdev/Twitter-API-v2-sample-code/blob/master/Follows-Lookup/followers_lookup.py
 
 # reference for get_params()
 # https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/get-followers-ids
@@ -67,16 +68,9 @@ def load_data_from_json(filename):
         data = json.load(fp)
     return data
 
-def export_else_append(data, filename):
-    if os.path.isfile(filename):
-        print("File exist & appended")
-        apppend_data_to_json(data, filename)
-    else:
-        print("File not exist. New File created.")
-        export_data_to_json(data, filename)
-
 
 def main():
+    # call API & export data to json format
     bearer_token = auth()
     url = create_url(user_id)
     headers = create_headers(bearer_token)
@@ -87,35 +81,50 @@ def main():
 
 
 if __name__ == "__main__":
-    user_list = [380, 244647486]
+    user_list = [380, 244647486] # to update this
+
+    # start getting followers id for each user
     for user in user_list:
-        # create folder
+        # create folder for each user
         os.makedirs(str(user))
         user_id = user
+        # set up first file count
         currfilecount = 1
-        nextcursor = -1 #first results page
+        # nextcursor "-1" refers to first results page
+        nextcursor = -1
         try:
+        # get first page of results & export to json
             main()
         except:
+        # if unable to get first page of results, sleep and retry
             time.sleep(60 * 15)
             main()
         finally:
             print('File1 for user_id {} exported. Loading File1...'.format(user_id))
 
-        data = load_data_from_json("followers{}.json".format(currfilecount))
+        # load followers1.json into data
+        # data = load_data_from_json("followers{}.json".format(currfilecount))
+
         print('Getting subsequent files...')
         while nextcursor != 0:
+            # load latest followers().json
             data = load_data_from_json("followers{}.json".format(currfilecount))
+            # based on latest json file loaded, set up nextcursor; For the next API call.
             nextcursor = data['next_cursor']
+            # add one count to currfilecount; For exporting to a new json in the next main() run.
             currfilecount += 1
             try:
+            # call API with updated nextcursor and export to new json file
                 main()
             except:
+            # sleep for 15 minutes if error, and try again
                 time.sleep(60*15)
                 main()
             finally:
                 print("File followers{} exported!".format(currfilecount))
+
         print("Extraction completed for user_id {}... Moving files".format(user_id))
+        # move all json files related to a user_id to a folder
         files = os.listdir()
         dest = os.getcwd()+"\\{}".format(user)
         for f in files:
@@ -123,11 +132,15 @@ if __name__ == "__main__":
                 shutil.move(f,dest)
         print("files moved into user_id {} folder".format(user_id))
 
+##########################################################
+##########################################################
+##########################################################
 
 #time.sleep(60*15)
 #print('times up!')
-# rate limit 15 request in 15 minutes, 5000 each requests
 
+
+# SAMPLE ERROR MESSAGE FOR TWITTER
 #Traceback (most recent call last):
 #  File "<input>", line 12, in <module>
 #  File "<input>", line 74, in main
@@ -136,12 +149,11 @@ if __name__ == "__main__":
 
 
 ###### TEMP ###########
-nextcursor
-data = load_data_from_json("followers1.json")
-print(data['next_cursor'])
-print(data['previous_cursor'])
-len(data['ids'])
-print(data['ids'])
+#data = load_data_from_json("followers1.json")
+#print(data['next_cursor'])
+#print(data['previous_cursor'])
+#len(data['ids'])
+#print(data['ids'])
 
 #sgag_sg 587.9k followers
 
