@@ -24,8 +24,7 @@ class IngestHistoricalData(object):
 
     def stream_tweets_to_bigquery(self,api,start_date,end_date):
        count = 0
-       for tweet in tweepy.Cursor(api.search, q=self.search_word,lang='en',since=start_date, until=end_date).items(500000):
-          # print('ehat in twee uh?',tweet)
+       for tweet in tweepy.Cursor(api.search, q=self.search_word, count=100, lang='en',since=start_date, until=end_date).items():
            json_data = {
                u'tweet_id': tweet._json.get('id'),
                u'twitter_handle_name': tweet._json.get('user').get('screen_name'),
@@ -36,12 +35,8 @@ class IngestHistoricalData(object):
            self.rows_to_insert.append(json_data)
            count = count + 1
            if count % 1000 == 0:
-               #print('row!',self.rows_to_insert)
                self.insert_to_bigquery(self.rows_to_insert)
                self.rows_to_insert = []
-           if count > 500000:
-               print('breaking after 500000 tweets')
-               break
 
     def get_tweets(self,api,start_date,end_date):
         tweets = Cursor(api.search, q=self.search_word, lang='en', since=start_date, until=end_date).items(1000)

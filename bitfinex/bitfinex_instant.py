@@ -38,24 +38,25 @@ def fetch_historical_candle_data(start, stop, symbol, interval, tick_limit, step
 
     data = []
     start_time = time.time()
-    print(start)
     while start < stop:
         end = start + step
         res = api_v2.candles(symbol=symbol, interval=interval, limit=tick_limit, start=start, end=end)
-        print(res)
+        if 'error' in res:
+            print('Going to sleep')
+            time.sleep(70)
+            res = api_v2.candles(symbol=symbol, interval=interval, limit=tick_limit, start=start, end=end)
         data.extend(res)
-
+        #
         print('Retrieving data from {} to {} for {}'.format(pd.to_datetime(start, unit='ms'),
-                                                            pd.to_datetime(end, unit='ms'), symbol))
+                                                             pd.to_datetime(end, unit='ms'), symbol))
 
         start = start + step
         # time.sleep(1.5)
     stop_time = time.time()
-    print(stop_time)
 
-    print(stop_time - start_time)
     df = convert_to_df(data)
     return df
+
 
 
 def fetch_candle_data(start_date):
@@ -67,15 +68,16 @@ def fetch_candle_data(start_date):
     # convert to unix time
     start_date_unix = date_util.convert_date_str_to_unix(str(start_date) + ' 00:00') * 1000
     end_date_unix = date_util.convert_date_str_to_unix(str(end_date) + ' 00:00') * 1000
-
     df = fetch_historical_candle_data(start_date_unix, end_date_unix, SYMBOL, INTERVAL, TICK_LIMIT, STEP)
 
+
+    #print(df)
+    #
     for index, row in df.iterrows():
         FactsBitcoinPrice.load_bitcoin_price(row)
 
     print('Done downloading data. Saving to .csv.')
-    df.to_csv(PATH)
-    print(PATH)
+    #df.to_csv(PATH)
     print('Done saving data.')
 
 

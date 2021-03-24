@@ -12,21 +12,24 @@ import pandas as pd
 import json
 import math
 import time
+from google.oauth2 import service_account
+from google.cloud import bigquery
+
 
 
 # To set your environment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
+#os.environ['BEARER_TOKEN_JANICE'] ='AAAAAAAAAAAAAAAAAAAAAJtxMQEAAAAAJZmeOOGETISoJvjAbS1loA3BU0A%3DA3Qdf8LFDm81fyl6rkKd2W1AfHGbkEXYRctvW7zumvsTLmp9nT'
 os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJtxMQEAAAAAJZmeOOGETISoJvjAbS1loA3BU0A%3DA3Qdf8LFDm81fyl6rkKd2W1AfHGbkEXYRctvW7zumvsTLmp9nT'
 
 
-
-df = pd.read_csv('bq_20210320_users.csv')
+df = pd.read_csv('../bq_20210320_users.csv')
 df.head()
 userList = list(df.twitter_handle_id)
 len(userList) #86586 users to get bio
-type(userList)
+#type(userList)
 jsonStr = json.dumps(userList)
-print(jsonStr)
+#print(jsonStr)
 
 #modified function to get followers from a Python list instead of json files
 def get_followers_from_list(userList):
@@ -73,7 +76,7 @@ def get_followers(file_directory):
 #print(follower_ids)
 
 def auth():
-    return os.environ.get("BEARER_TOKEN")
+    return os.environ.get('BEARER_TOKEN')
 
 def create_url(user_id):
     # Replace with user ID below
@@ -104,17 +107,42 @@ def connect_to_endpoint(url, headers, params):
         )
     return response.json()
 
+def insert_to_bigquery(rows_to_insert):
+    project_id = 'nice-forge-305606'
+    credentials = service_account.Credentials.from_service_account_file('C:/Users/suren/Documents/bead_project/nice-forge-305606-0c1b603cf119.json')
+    bigquery_client = bigquery.Client(credentials= credentials,project=project_id)
+    table_id = "nice-forge-305606.twitter_dataset.twitter_ID_details"
+    errors = bigquery_client.insert_rows_json(table_id, rows_to_insert)
+    if errors == []:
+        print("New rows have been added.")
+    else:
+        print("Encountered errors while inserting rows: {}".format(errors))
+
 def get_metrics(json_pyobj):
+    rows_to_insert = []
     for i in range(0, len(json_pyobj['data'])):
-        print("retrieving public metrics for user {}".format(json_pyobj["data"][i]["id"]))
-        user_id.append(json_pyobj["data"][i]["id"])
-        user_name.append(json_pyobj["data"][i]["username"])
-        user_desc.append(json_pyobj["data"][i]["description"])
-        created_at.append(json_pyobj["data"][i]["created_at"])
-        followers_count.append(json_pyobj["data"][i]["public_metrics"]["followers_count"])
-        following_count.append(json_pyobj["data"][i]["public_metrics"]["following_count"])
-        listed_count.append(json_pyobj["data"][i]["public_metrics"]["listed_count"])
-        tweet_count.append(json_pyobj["data"][i]["public_metrics"]["tweet_count"])
+        # print("retrieving public metrics for user {}".format(json_pyobj["data"][i]["id"]))
+        # user_id.append(json_pyobj["data"][i]["id"])
+        # user_name.append(json_pyobj["data"][i]["username"])
+        # user_desc.append(json_pyobj["data"][i]["description"])
+        # created_at.append(json_pyobj["data"][i]["created_at"])
+        # followers_count.append(json_pyobj["data"][i]["public_metrics"]["followers_count"])
+        # following_count.append(json_pyobj["data"][i]["public_metrics"]["following_count"])
+        # listed_count.append(json_pyobj["data"][i]["public_metrics"]["listed_count"])
+        # tweet_count.append(json_pyobj["data"][i]["public_metrics"]["tweet_count"])
+
+        json_data = {
+            u'id': json_pyobj["data"][i]["id"],
+            u'username': json_pyobj["data"][i]["username"],
+            u'description': json_pyobj["data"][i]["description"],
+            u'created_at': json_pyobj["data"][i]["created_at"],
+            u'followers_count': json_pyobj["data"][i]["public_metrics"]["followers_count"],
+            u'following_count': json_pyobj["data"][i]["public_metrics"]["following_count"],
+            u'listed_count': json_pyobj["data"][i]["public_metrics"]["listed_count"],
+            u'tweet_count': json_pyobj["data"][i]["public_metrics"]["tweet_count"]
+        }
+        rows_to_insert.append(json_data)
+    insert_to_bigquery(rows_to_insert)
 
 #1337*100+25 #133,725 followers
 #1338 sublists of 100 follower ids
@@ -129,6 +157,7 @@ def main(var_dict, i):
         json_response = connect_to_endpoint(url, headers, params)
         json_str =  json.dumps(json_response, indent=4, sort_keys=True)
         result = json.loads(json_str) #turn json string into a python dictionary
+        print('sopme resutl length',len(result['data']))
         all_resp["response{0}".format(i)] = result
         get_metrics(result)
 
@@ -148,27 +177,33 @@ if __name__ == "__main__":
     var_dict = get_followers_from_list(userList)
     for i in range(0, len(var_dict)):
         try:
+            #running_token = tokens[0]
             main(var_dict, i)
         except:
+            # if running_token == tokens[0]:
+            #     running_token = tokens[1]
+            # else:
+            #     running_token = tokens[0]
+            print('Going to sleep.')
             time.sleep(60*15)
             main(var_dict,i)
         finally:
             print('string{} of users processed! {} requests remaining...'.format(i, len(var_dict)-i-1))
-
-    print("info for", str(len(user_id)) ,"user_ids looked up")
-
-    ### create data frame
-    df = pd.DataFrame({"user_id":user_id,
-                       "user_name":user_name,
-                       "created_at":created_at,
-                       "followers_count":followers_count,
-                       "following_count":following_count,
-                       "listed_count":listed_count,
-                       "tweet_count":tweet_count,
-                       "user_desc":user_desc})
-
-    df.to_json("users_info.json", orient = "split", compression= "infer")
-    print(df.head())
-
-    df.shape #85082,8 (instead of original userList 86586
+    #
+    # print("info for", str(len(user_id)) ,"user_ids looked up")
+    #
+    # ### create data frame
+    # df = pd.DataFrame({"user_id":user_id,
+    #                    "user_name":user_name,
+    #                    "created_at":created_at,
+    #                    "followers_count":followers_count,
+    #                    "following_count":following_count,
+    #                    "listed_count":listed_count,
+    #                    "tweet_count":tweet_count,
+    #                    "user_desc":user_desc})
+    #
+    # df.to_json("users_info.json", orient = "split", compression= "infer")
+    # print(df.head())
+    #
+    # df.shape #85082,8 (instead of original userList 86586
 

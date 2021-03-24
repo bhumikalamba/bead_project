@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 
 cwd = os.getcwd()
 
-_start_date = '2021-03-10'  ## Amend start date for a different timeperiod
+_start_date = '2021-03-03'  ## Amend start date for a different timeperiod
 json_data = None
 
 json_file_path = cwd + "/" + "twitterTokens.json"
@@ -27,7 +27,7 @@ if json_data is not None:
 
         ACCESS_TOKEN = str(token_detail.get('ACCESS_TOKEN'))
         ACCESS_SECRET = str(token_detail.get('ACCESS_SECRET'))
-        _end_date = datetime.strptime(start_date_str, '%Y-%m-%d') + timedelta(5)
+        _end_date = datetime.strptime(start_date_str, '%Y-%m-%d') + timedelta(1)
         end_date = _end_date.strftime('%Y-%m-%d')
 
         auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
@@ -35,9 +35,9 @@ if json_data is not None:
         api = API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
         ingest = IngestHistoricalData()
-        ingest.stream_tweets_to_bigquery(api,start_date_str,end_date)
+        ingest.stream_tweets_to_bigquery()
         logging.info('Tweets between %s and %s were successfully extracted using %s Twitter details!' % (start_date_str, end_date, str(token_detail.get('NAME'))))
         # os.system(call_script)
-        #_start_date = datetime.strptime(start_date_str, '%Y-%m-%d') + timedelta(1)
-        #_start_date = _start_date.strftime('%Y-%m-%d')
+        _start_date = datetime.strptime(start_date_str, '%Y-%m-%d') + timedelta(1)
+        _start_date = _start_date.strftime('%Y-%m-%d')
 

@@ -13,10 +13,17 @@ import os
 import json
 import time
 import shutil
+from model import User
+import csv
+import pandas
 
 # To set your environment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
 os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJtxMQEAAAAAJZmeOOGETISoJvjAbS1loA3BU0A%3DA3Qdf8LFDm81fyl6rkKd2W1AfHGbkEXYRctvW7zumvsTLmp9nT'
+#os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJxRNQEAAAAAd9lCTHl5MjHWqnQnPxAvvpUkhU4%3DD5ywyPyd8fsdCFwfITvIEaWy0WK2OP3Bq7hg58LkWU1B9JwkUc'
+
+GOOGLE_APPLICATION_CREDENTIALS="C:/Users/Suren/Documents/nice-forge-305606-0c1b603cf119.json"
+
 
 def auth():
     return os.environ.get("BEARER_TOKEN")
@@ -68,25 +75,44 @@ def load_data_from_json(filename):
         data = json.load(fp)
     return data
 
+def export_else_append(data, filename):
+    if os.path.isfile(filename):
+        print("File exist & appended")
+        apppend_data_to_json(data, filename)
+    else:
+        print("File not exist. New File created.")
+        export_data_to_json(data, filename)
+
+def create_graph(data,main_node):
+    for user in data['ids']:
+        user_cre = User.get_or_create({"id_str":user})
+        user_cre[0].follows.connect(main_node[0])
+        user_cre[0].save()
 
 def main():
-    # call API & export data to json format
     bearer_token = auth()
-    url = create_url(user_id)
+    url = create_url(user_id[0])
+    main_node = User.get_or_create({"id_str":user_id[0]})
+    main_node[0].screen_name = user_id[1]
+    main_node[0].save()
     headers = create_headers(bearer_token)
     params = get_params(nextcursor)
     json_response = connect_to_endpoint(url, headers, params)
+    create_graph(json_response,main_node)
     #print(json.dumps(json_response, indent=4, sort_keys=True)
     export_data_to_json(json_response, "followers{}.json".format(currfilecount))
 
 
 if __name__ == "__main__":
-    user_list = [380, 244647486] # to update this
-
-    # start getting followers id for each user
-    for user in user_list:
-        # create folder for each user
-        os.makedirs(str(user))
+    #user = User.get_or_create({"id_str":1234})
+    df = pandas.read_csv('twitter_IDS.csv')
+    user_lists = df.values.tolist()
+    # for user in flattened[1:5]:
+    #     print(user)
+    # user_list = [380, 244647486]
+    for user in user_lists:
+        # create folder
+        #os.makedirs(str(user))
         user_id = user
         # set up first file count
         currfilecount = 1
@@ -100,7 +126,7 @@ if __name__ == "__main__":
             time.sleep(60 * 15)
             main()
         finally:
-            print('File1 for user_id {} exported. Loading File1...'.format(user_id))
+            print('File1 for user_id {} exported. Loading File1...'.format(user_id[0]))
 
         # load followers1.json into data
         # data = load_data_from_json("followers{}.json".format(currfilecount))
@@ -121,16 +147,14 @@ if __name__ == "__main__":
                 time.sleep(60*15)
                 main()
             finally:
-                print("File followers{} exported!".format(currfilecount))
-
-        print("Extraction completed for user_id {}... Moving files".format(user_id))
-        # move all json files related to a user_id to a folder
+                print("File followers {} exported!".format(currfilecount))
+        print("Extraction completed for user_id {}... Moving files".format(user_id[0]))
         files = os.listdir()
-        dest = os.getcwd()+"\\{}".format(user)
+        dest = os.getcwd()+"\\{}".format(user[0])
         for f in files:
             if(f.startswith("followers")):
                 shutil.move(f,dest)
-        print("files moved into user_id {} folder".format(user_id))
+        print("files moved into user_id {} folder".format(user_id[0]))
 
 ##########################################################
 ##########################################################
@@ -138,6 +162,7 @@ if __name__ == "__main__":
 
 #time.sleep(60*15)
 #print('times up!')
+# rate limit 15 request in 15 minutes, 5000 each requests
 
 
 # SAMPLE ERROR MESSAGE FOR TWITTER

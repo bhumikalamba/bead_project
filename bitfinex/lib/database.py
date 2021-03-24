@@ -9,6 +9,7 @@ from psycopg2 import sql
 DBCONN_STR = "dbname='postgres' user='bhumika' host='34.87.112.231' password='doomsday13' connect_timeout=20"
 
 
+
 class DBConn:
 
     def __init__(self, conn_str):
