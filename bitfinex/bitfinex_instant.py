@@ -73,11 +73,11 @@ def fetch_candle_data(start_date):
 
     #print(df)
     #
-    for index, row in df.iterrows():
-        FactsBitcoinPrice.load_bitcoin_price(row)
+    # for index, row in df.iterrows():
+    #     FactsBitcoinPrice.load_bitcoin_price(row)
 
     print('Done downloading data. Saving to .csv.')
-    #df.to_csv(PATH)
+    df.to_csv(PATH)
     print('Done saving data.')
 
 
