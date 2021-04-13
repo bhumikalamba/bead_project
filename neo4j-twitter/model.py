@@ -5,7 +5,7 @@ from neomodel import (config, StructuredNode, StringProperty, IntegerProperty,
                       StructuredRel, AliasProperty, RelationshipTo)  # work with neo4j
 
 
-config.DATABASE_URL = "bolt://neo4j:password@localhost:7687"
+config.DATABASE_URL = "bolt://neo4j:$martBEAD&@34.87.46.194:7474"
 
 class User(StructuredNode):
     id_str = StringProperty(unique_index=True, required=True)

@@ -75,13 +75,13 @@ def load_data_from_json(filename):
         data = json.load(fp)
     return data
 
-def export_else_append(data, filename):
-    if os.path.isfile(filename):
-        print("File exist & appended")
-        apppend_data_to_json(data, filename)
-    else:
-        print("File not exist. New File created.")
-        export_data_to_json(data, filename)
+# def export_else_append(data, filename):
+#     if os.path.isfile(filename):
+#         print("File exist & appended")
+#         apppend_data_to_json(data, filename)
+#     else:
+#         print("File not exist. New File created.")
+#         export_data_to_json(data, filename)
 
 def create_graph(data,main_node):
     for user in data['ids']:
@@ -92,12 +92,16 @@ def create_graph(data,main_node):
 def main():
     bearer_token = auth()
     url = create_url(user_id[0])
+    print('url',url)
     main_node = User.get_or_create({"id_str":user_id[0]})
+    print(main_node)
     main_node[0].screen_name = user_id[1]
     main_node[0].save()
     headers = create_headers(bearer_token)
     params = get_params(nextcursor)
+    print('partam',params)
     json_response = connect_to_endpoint(url, headers, params)
+    print('json resp',json_response)
     create_graph(json_response,main_node)
     #print(json.dumps(json_response, indent=4, sort_keys=True)
     export_data_to_json(json_response, "followers{}.json".format(currfilecount))
