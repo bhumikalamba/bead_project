@@ -24,7 +24,8 @@ GOOGLE_APPLICATION_CREDENTIALS="C:/Users/Suren/Documents/nice-forge-305606-0c1b6
 
 spark = SparkSession.builder.appName('READ twitter CSV files').getOrCreate()
 
-from pyspark.sql.types import StructType, StructField, StringType,IntegerType
+# NOTE TO SURENDHAR: changed to import *
+from pyspark.sql.types import *
 
 ### BIG QUERY CONNECTION CHECK OUT LATER
 
@@ -44,19 +45,52 @@ from pyspark.sql.types import StructType, StructField, StringType,IntegerType
 
 ### USING CSV FILES
 
-df = spark.read.format('csv') \
-    .option("inferSchema","true") \
-    .option("header","true") \
-    .option("sep",",") \
+# NOTE TO SURENDHAR: use this schema. will parse through the values and use null if the value doesn't make sense.
+tweets_schema = StructType([
+    StructField('tweet_id',StringType(),True),
+    StructField('twitter_handle_name',StringType(),True),
+    StructField('twitter_handle_id',StringType(),True),
+    StructField('tweet_datetime',TimestampType(),True),
+    StructField('twitter_handle_desc',StringType(),True),
+    StructField('followers_count',IntegerType(),True),
+    StructField('friends_count',IntegerType(),True),
+    StructField('listed_count',IntegerType(),True),
+    StructField('created_at_datetime',TimestampType(),True),
+    StructField('twitter_datetime_hour',TimestampType(),True),
+    StructField('statuses_count',IntegerType(),True),
+    StructField('tweet',StringType(),True),
+    StructField('truncated',BooleanType(),True)
+])
+
+# NOTE TO SURENDHAR: addded option('mode','DROMPMALFORMED') and used the custom schema
+df = spark.read.format('csv')\
+    .option("header","true")\
+    .option('mode','DROPMALFORMED')\
+    .schema(tweets_schema) \
     .load("bq-results-ingested.csv")
 
+df.show()
 df.printSchema()
 
 
-
 ## Drop duplicate tweets
-df2 = df.dropDuplicates().agg(F.expr('percentile(followers_count, array(0.5))')[0].alias('50-percentile'),F.expr('percentile(followers_count, array(0.75))')[0].alias('75-percentile'))
-df_filtered = df.filter((df['followers_count'] > int(df2.select("50-percentile").first()[0])) & (df['followers_count'] < int(df2.select("75-percentile").first()[0]))).dropDuplicates(['twitter_handle_id'])
+# NOTE TO SURENDHAR: I selected just columns at the twitter ID level first before de-dup.
+df2 = df\
+    .select('twitter_handle_name','twitter_handle_id','twitter_handle_desc','followers_count','friends_count')\
+    .dropDuplicates()\
+    .dropDuplicates(['twitter_handle_id'])\
+    .agg(F.expr('percentile(followers_count, array(0.5))')[0].alias('50-percentile'),F.expr('percentile(followers_count, array(0.75))')[0].alias('75-percentile'))
+
+df2.show()
+
+# NOTE TO SURENDHAR: Using >= and <=
+df_filtered = df \
+    .select('twitter_handle_name','twitter_handle_id','twitter_handle_desc','followers_count','friends_count') \
+    .filter((df['followers_count'] >= int(df2.select("50-percentile").first()[0])) & (df['followers_count'] <= int(df2.select("75-percentile").first()[0])))\
+    .dropDuplicates(['twitter_handle_id'])\
+    .sort(col("followers_count").desc())
+
+df_filtered.show()
 
 logging.info('The script will run for approximately %s hours' % str((df_filtered.select(F.sum('followers_count')).collect()[0][0]/ 75000) * 15/60))
 
