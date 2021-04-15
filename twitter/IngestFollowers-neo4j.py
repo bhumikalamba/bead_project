@@ -122,7 +122,6 @@ def create_graph(data,main_node):
 def begin_ingestion(user_id):
     bearer_token = auth()
     url = create_url(user_id[0])
-    print('url',url)
     try:
         main_node = User.get_or_create({"id_str":user_id[0]})
     except Exception as ex:
