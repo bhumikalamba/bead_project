@@ -8,6 +8,12 @@ Code to accompany the following paper: Identification of Influential Online Prof
 - To install dependencies:
 	- run ```pip install -r requirements.txt```
 	- If you add any libraries thru pip install type ```pip freeze > requirements.txt```
+- To run PySpark in PyCharm IDE (for Windows):
+	- add the following 3 paths to the project's Content Root in PyCharm IDE: 
+		- PyCharm IDE > Settings > Project Structure > Add Content Root
+		- C:\spark-2.4.7-bin-hadoop2.7\python\
+		- C:\spark-2.4.7-bin-hadoop2.7\python\lib\py4j-0.10.7-src.zip
+		- C:\spark-2.4.7-bin-hadoop2.7\python\lib\pyspark.zip
 
 ### 2) Data ingestion
 **Bitcoin price data**
