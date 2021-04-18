@@ -28,10 +28,10 @@ bw = -10
 # Hard to automatically generate the golden windows.
 # Let's manually specify here instead, based on events and bw.
 # note: golden windows can't overlap! otherwise code will mess up
-gw1 = ('2021-03-31 03:50:00','2021-03-31 04:00:00')
-gw2 = ('2021-03-31 05:50:00','2021-03-31 06:00:00')
-gw3 = ('2021-03-31 11:50:00','2021-03-31 12:00:00')
-gw4 = ('2021-04-01 23:50:00','2021-04-02 00:00:00')
+gw1 = ('2021-03-31 03:30:00','2021-03-31 04:00:00')
+gw2 = ('2021-03-31 05:30:00','2021-03-31 06:00:00')
+gw3 = ('2021-03-31 11:30:00','2021-03-31 12:00:00')
+gw4 = ('2021-04-01 23:30:00','2021-04-02 00:00:00')
 
 ############ END YOUR CONFIG #########
 
@@ -141,7 +141,6 @@ wtf_tweets = total_nbr_tweets \
 
 wtf_tweets.show()
 wtf_tweets.shape()
-
 
 #:::::::::::::::::::::::::::::::::::::
 # > Calculate WTF for news data
