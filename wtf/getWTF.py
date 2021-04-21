@@ -7,8 +7,9 @@ from pyspark.sql.types import *
 ############ YOUR CONFIG ############
 
 # File paths to data store (if using local machine for testing only)
-my_tweets_source_file = '/Users/rais/Desktop/post grad/EBAC/2020/CA/canary_v1/bead_project/analysis/sandbox_data/bq-results-20210411-152934-y7k6qt7cfuby.csv'
-my_news_source_file = '/Users/rais/Desktop/post grad/EBAC/2020/CA/canary_v1/bead_project/analysis/sandbox_data/dl_files/*'
+my_tweets_source_file = '/Users/rais/Desktop/post grad/EBAC/2020/CA/canary_v1/bead_project/wtf/sandbox_data/bq-results-20210411-152934-y7k6qt7cfuby.csv'
+my_news_source_file = '/Users/rais/Desktop/post grad/EBAC/2020/CA/canary_v1/bead_project/wtf/sandbox_data/dl_files/*'
+output_path = '/Users/rais/Desktop/post grad/EBAC/2020/CA/canary_v1/bead_project/wtf/sandbox_data/output_files'
 
 # filter tweets and news data to sample time period
 sample_periods = ('2021-03-30 12:00:00','2021-04-03 07:00:00')
@@ -23,16 +24,16 @@ events = ('2021-03-31 04:00:00','2021-03-31 06:00:00','2021-03-31 12:00:00','202
 # Bandwidth (the time bandwidth in minutes
 # around each event that we want to specify
 # as the golden window)
-#bw = -30
-bw = '30'
+#bw = -15
+bw = '15'
 
 # Hard to automatically generate the golden windows.
 # Let's manually specify here instead, based on events and bw.
 # note: golden windows can't overlap! otherwise code will mess up
-gw1 = ('2021-03-31 03:30:00','2021-03-31 04:00:00')
-gw2 = ('2021-03-31 05:30:00','2021-03-31 06:00:00')
-gw3 = ('2021-03-31 11:30:00','2021-03-31 12:00:00')
-gw4 = ('2021-04-01 23:30:00','2021-04-02 00:00:00')
+gw1 = ('2021-03-31 03:45:00','2021-03-31 04:00:00')
+gw2 = ('2021-03-31 05:45:00','2021-03-31 06:00:00')
+gw3 = ('2021-03-31 11:45:00','2021-03-31 12:00:00')
+gw4 = ('2021-04-01 23:45:00','2021-04-02 00:00:00')
 
 ############ END YOUR CONFIG #########
 
@@ -43,12 +44,13 @@ gw4 = ('2021-04-01 23:30:00','2021-04-02 00:00:00')
 spark = SparkSession \
     .builder \
     .appName("wtf") \
-    .config('spark.jars.packages', 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.19.1') \
     .getOrCreate()
 
+'''
 # Use the Cloud Storage bucket for temporary BigQuery export data used by the connector
 bucket = "temp_spark_bucket_1"
 spark.conf.set('temporaryGcsBucket', bucket)
+'''
 
 #:::::::::::::::::::::::::::::::::::::
 # > Build functions
@@ -121,7 +123,7 @@ def get_wtf(spark_df,agent):
 #:::::::::::::::::::::::::::::::::::::
 
 # read in Twitter tweets from csv from local machine
-'''
+
 tweets_schema = StructType([
     StructField('tweet_id',StringType(),True),
     StructField('twitter_handle_name',StringType(),True),
@@ -147,8 +149,8 @@ tweets = spark.read \
     .load(my_tweets_source_file) \
     .select('tweet_id','twitter_handle_name','twitter_handle_id','tweet_datetime') \
     .dropDuplicates(['tweet_id'])
-'''
 
+'''
 # read in Twitter tweets from BigQuery
 tweets = spark.read \
     .format('bigquery') \
@@ -161,7 +163,7 @@ tweets.show()
 tweets = tweets \
     .select('tweet_id','twitter_handle_name','twitter_handle_id','tweet_datetime') \
     .dropDuplicates(['tweet_id'])
-
+'''
 
 twitter_ids = tweets.select('twitter_handle_id','twitter_handle_name').dropDuplicates(['twitter_handle_id'])
 
@@ -184,18 +186,25 @@ wtf_tweets = wtf_tweets \
     .sort(f.col('wtf').desc())
 wtf_tweets.show()
 
+'''
 # Saving the data to BigQuery
 filename = 'project_data.wtf_tweets_'+bw
 wtf_tweets.write.format('bigquery') \
     .option('table', filename) \
     .save()
+'''
+
+# Save data to local machine
+filename = output_path+'/wtf_tweets_'+bw+'.csv'
+wtf_tweets.toPandas().to_csv(filename,index=False)
 
 print('Done writing wtf_tweets to '+filename+'.\n\n')
+
 
 #:::::::::::::::::::::::::::::::::::::
 # > Calculate WTF for news data
 #:::::::::::::::::::::::::::::::::::::
-'''
+
 # read in news articles
 news = spark.read \
     .format("parquet") \
@@ -218,10 +227,16 @@ news_sample.filter(f.col('publish_in_golden_window')==1).show()
 wtf_news = get_wtf(news_sample,'source_domain')
 wtf_news.show()
 
+'''
 # Saving the data to BigQuery
 filename = 'direct-analog-308416:project_data.wtf_news_'+bw
 wtf_news.write.format('bigquery') \
     .option('table', filename) \
     .save()
-
 '''
+
+# Save data to local machine
+filename = output_path+'/wtf_news_'+bw+'.csv'
+wtf_news.toPandas().to_csv(filename,index=False)
+
+print('Done writing wtf_news_'+bw+' to '+filename+'.\n\n')
