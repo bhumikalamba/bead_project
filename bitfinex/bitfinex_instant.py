@@ -4,6 +4,7 @@ import pandas as pd
 import time
 import lib.date_util as date_util
 from lib.database import db
+from google.oauth2 import service_account
 from models.facts_bitfinex import FactsBitcoinPrice
 
 COLUMN_NAMES = ['time', 'open', 'close', 'high', 'low', 'volume']
@@ -55,6 +56,7 @@ def fetch_historical_candle_data(start, stop, symbol, interval, tick_limit, step
     stop_time = time.time()
 
     df = convert_to_df(data)
+    print('Data frame',df)
     return df
 
 
@@ -70,15 +72,22 @@ def fetch_candle_data(start_date):
     end_date_unix = date_util.convert_date_str_to_unix(str(end_date) + ' 00:00') * 1000
     df = fetch_historical_candle_data(start_date_unix, end_date_unix, SYMBOL, INTERVAL, TICK_LIMIT, STEP)
 
+    import os
+    cwd = os.getcwd()
 
-    #print(df)
+    path_to_json = cwd + '\\direct-analog-308416-f082eab9c7fa.json'
+    credentials = service_account.Credentials.from_service_account_file(path_to_json)
+
+    df.to_gbq(destination_table='project_data.bitcoin_data',
+              project_id='direct-analog-308416',chunksize=None,
+              credentials=credentials,if_exists='replace')
     #
     # for index, row in df.iterrows():
     #     FactsBitcoinPrice.load_bitcoin_price(row)
 
-    print('Done downloading data. Saving to .csv.')
-    df.to_csv(PATH)
-    print('Done saving data.')
+    # print('Done downloading data. Saving to .csv.')
+    # df.to_csv(PATH)
+    # print('Done saving data.')
 
 
 if __name__ == "__main__":

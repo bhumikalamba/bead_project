@@ -11,8 +11,20 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 import pyspark.sql.functions as F
 from pyspark import *
+import tweepy
+from tweepy import API
 import logging
 from GetFollowers import *
+from pyspark.sql.functions import col
+
+
+CONSUMER_KEY = "7dJU7wZSHhZwTNXshgczruB7Q"
+CONSUMER_SECRET = "tbYF5yp3S0LjNIeV5XMkA33hhuYeuvYOuVVy1X6fgGxJeygWUp"
+ACCESS_TOKEN = "313172786-DtYVsYbcWXjDZMGuDIJY3tU8dm1Ax0oXl03RQ4Uz"
+ACCESS_SECRET =  "aBjwOguGu2bthYjC3xXxSOSbLac1C410B0o4pT9Akfir8"
+
+tweepy_auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+tweepy_auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -67,7 +79,7 @@ df = spark.read.format('csv')\
     .option("header","true")\
     .option('mode','DROPMALFORMED')\
     .schema(tweets_schema) \
-    .load("bq-results-ingested.csv")
+    .load("bq-results-full.csv")
 
 df.show()
 df.printSchema()
@@ -90,12 +102,11 @@ df_filtered = df \
     .dropDuplicates(['twitter_handle_id'])\
     .sort(col("followers_count").desc())
 
-df_filtered.show()
+df_filtered.show(50)
 
 logging.info('The script will run for approximately %s hours' % str((df_filtered.select(F.sum('followers_count')).collect()[0][0]/ 75000) * 15/60))
 
-
-user_lists = df_filtered.select(["twitter_handle_id","twitter_handle_name"]).rdd.flatMap(lambda x: [x]).collect()
+user_lists = df_filtered.select(["twitter_handle_id","twitter_handle_name","twitter_handle_desc","followers_count","friends_count"]).rdd.flatMap(lambda x: [x]).collect()
 
 
 
@@ -118,7 +129,6 @@ def create_headers(bearer_token):
 
 def connect_to_endpoint(url, headers, params):
     response = requests.request("GET", url, headers=headers, params=params)
-    print(response.status_code)
     if response.status_code != 200:
         raise Exception(
             "Request returned an error: {} {}".format(
@@ -156,78 +166,81 @@ def create_graph(data,main_node):
 def begin_ingestion(user_id):
     bearer_token = auth()
     url = create_url(user_id[0])
-    try:
-        main_node = User.get_or_create({"id_str":user_id[0]})
-    except Exception as ex:
-        print('dafuq',ex)
-    print(main_node)
+    main_node = User.get_or_create({"id_str":user_id[0]})
     main_node[0].screen_name = user_id[1]
+    main_node[0].description = user_id[2]
+    main_node[0].followers_count = user_id[3]
+    main_node[0].friends_count = user_id[4]
     main_node[0].save()
     headers = create_headers(bearer_token)
     params = get_params(nextcursor)
-    print('partam',params)
     json_response = connect_to_endpoint(url, headers, params)
-    print('json resp',json_response)
     create_graph(json_response,main_node)
     #print(json.dumps(json_response, indent=4, sort_keys=True)
     export_data_to_json(json_response, "followers{}.json".format(currfilecount))
 
 
 for user in user_lists:
-    # print('user',user[0])
-    # print('user woho', user[1])
-    # print(stopit)
-    # create folder
-    # os.makedirs(str(user))
     user_id = user
     # set up first file count
-    currfilecount = 1
-    # nextcursor "-1" refers to first results page
-    nextcursor = -1
+    api = API(tweepy_auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+    user_exist = True
     try:
-        # get first page of results & export to json
-        print('hey')
-        #main()
-        begin_ingestion(user_id)
-        print('afer main')
-    except:
-        # if unable to get first page of results, sleep and retry
-        logging.info('sleeping for 15 mins')
-        time.sleep(60 * 15)
-        logging.info('Okay! Back to work!')
-        main()
-    finally:
-        print('File1 for user_id {} exported. Loading File1...'.format(user_id[0]))
+        user_obj = api.get_user(user_id[0])
+        if user_obj.protected == True:
+            user_exist = False
+    except Exception as ex:
+        user_exist = False
+        logging.info("User account no longer exists in Twitter.")
 
-    # load followers1.json into data
-    # data = load_data_from_json("followers{}.json".format(currfilecount))
-
-    print('Getting subsequent files...')
-    while nextcursor != 0:
-        # load latest followers().json
-        data = load_data_from_json("followers{}.json".format(currfilecount))
-        # based on latest json file loaded, set up nextcursor; For the next API call.
-        nextcursor = data['next_cursor']
-        # add one count to currfilecount; For exporting to a new json in the next main() run.
-        currfilecount += 1
+    if user_exist:
+        currfilecount = 1
+        # nextcursor "-1" refers to first results page
+        nextcursor = -1
         try:
-            # call API with updated nextcursor and export to new json file
-            #main()
+            # get first page of results & export to json
             begin_ingestion(user_id)
-        except:
-            # sleep for 15 minutes if error, and try again
-            logging.info('Sleeping for 15 mins')
+        except Exception as ex:
+            print('what uh', ex)
+            # if unable to get first page of results, sleep and retry
+            logging.info('sleeping for 15 mins')
             time.sleep(60 * 15)
             logging.info('Okay! Back to work!')
-            main()
+            #main()
+            begin_ingestion(user_id)
         finally:
-            print("File followers {} exported!".format(currfilecount))
-    print("Extraction completed for user_id {}... Moving files".format(user_id[0]))
-    files = os.listdir()
-    dest = os.getcwd() + "\\{}".format(user[0])
-    for f in files:
-        if (f.startswith("followers")):
-            shutil.move(f, dest)
-    print("files moved into user_id {} folder".format(user_id[0]))
+            print('File1 for user_id {} exported. Loading File1...'.format(user_id[0]))
+
+        # load followers1.json into data
+        data = load_data_from_json("followers{}.json".format(currfilecount))
+
+        print('Getting subsequent files...')
+        while nextcursor != 0:
+            # load latest followers().json
+            data = load_data_from_json("followers{}.json".format(currfilecount))
+            # based on latest json file loaded, set up nextcursor; For the next API call.
+            nextcursor = data['next_cursor']
+            # add one count to currfilecount; For exporting to a new json in the next main() run.
+            currfilecount += 1
+            try:
+                # call API with updated nextcursor and export to new json file
+                #main()
+                begin_ingestion(user_id)
+            except:
+                # sleep for 15 minutes if error, and try again
+                logging.info('Sleeping for 15 mins')
+                time.sleep(60 * 15)
+                logging.info('Okay! Back to work!')
+                #main()
+                begin_ingestion(user_id)
+            finally:
+                print("File followers {} exported!".format(currfilecount))
+        print("Extraction completed for user_id {}... Moving files".format(user_id[0]))
+        files = os.listdir()
+        dest = os.getcwd() + "\\{}".format(user[0])
+        for f in files:
+            if (f.startswith("followers")):
+                shutil.move(f, dest)
+        print("files moved into user_id {} folder".format(user_id[0]))
 
 
