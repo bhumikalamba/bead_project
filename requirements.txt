@@ -39,3 +39,7 @@ typing-extensions==3.7.4.3
 urllib3==1.26.3
 yarl==1.6.3
 pyspark==3.0.0
+google-auth==1.29.0
+google-cloud==0.34.0
+google-cloud-bigquery==2.13.1
+
