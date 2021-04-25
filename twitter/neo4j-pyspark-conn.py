@@ -1,21 +1,5 @@
 from pyspark.sql import SparkSession
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime
-import pytz
-from itertools import cycle
-import numpy as np
-from google.cloud import bigquery
-from google.oauth2 import service_account
-import pyspark.sql.functions as F
-from pyspark import *
-import tweepy
-from tweepy import API
-import logging
-from GetFollowers import *
-from pyspark.sql.functions import col
+
 
 spark = SparkSession\
          .builder \
@@ -43,11 +27,33 @@ df = spark.read.format("org.neo4j.spark.DataSource") \
   .option("authentication.basic.username", "neo4j") \
   .option("authentication.basic.password", "password") \
   .option("relationship","FOLLOWS") \
-  .option("relationship.nodes.map", "true")\
+  .option("relationship.nodes.map", "false")\
   .option("relationship.source.labels", "User")\
   .option("relationship.target.labels", "User")\
   .load()
 
-df.show()
 
+edges = df.select("`<rel.type>`","`source.id_str`","`target.id_str`").selectExpr("`<rel.type>` as relationship", "`source.id_str` as src", "`target.id_str` as dst")
+
+
+vertex = spark.read.format("org.neo4j.spark.DataSource") \
+  .option("url", "bolt://localhost:7687") \
+  .option("authentication.type", "basic") \
+  .option("authentication.basic.username", "neo4j") \
+  .option("authentication.basic.password", "password") \
+  .option("query",
+          "MATCH (n:User) WHERE n.screen_name CONTAINS '' RETURN n.screen_name as screen_name,n.id_str as id,n.description as description,n.followers_count as followers_count")\
+  .load()
+
+vertex.show()
+
+edges.show()
+from graphframes import GraphFrame
+
+g = GraphFrame(vertex,edges)
+
+g.inDegrees.show()
+
+results = g.pageRank(resetProbability=0.01, maxIter=20)
+results.vertices.select("id", "pagerank").show()
 #   .option("query", "MATCH (n:User) WHERE n.screen_name CONTAINS '' RETURN n.screen_name,n.id_str,n.description,n.followers_count")\
