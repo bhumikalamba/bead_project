@@ -1,15 +1,30 @@
 from pyspark.sql import SparkSession
 import logging
+import google.auth
 from closeness_centrality import *
+from graphframes import GraphFrame
+from google.cloud import bigquery
 
 logging.basicConfig(level=logging.INFO)
 
+'''
+spark-submit --jars gs://spark-lib/bigquery/spark-bigquery_2.12-0.10.0-beta-shaded.jar,
+                    gs://neo4j-jar/neo4j-connector-apache-spark_2.12-4.0.1_for_spark_3.jar,
+                    gs://neo4j-jar/graphframes-0.8.0-spark3.0-s_2.12.jar 
+                    --driver-memory 5g 
+                    --executor-memory 5g 
+                    neo4j-pyspark-conn.py
+'''
 
-spark = SparkSession\
-         .builder \
-         .appName('READ Neo4j data') \
-         .config('spark.jars.packages', 'neo4j-contrib:neo4j-connector-apache-spark_2.11:4.0.1') \
-         .getOrCreate()
+GOOGLE_APPLICATION_CREDENTIALS = './direct-analog-308416-f082eab9c7fa.json'
+cred = google.auth.load_credentials_from_file(GOOGLE_APPLICATION_CREDENTIALS)
+
+spark = SparkSession.builder.master('yarn').\
+        appName('READ Neo4j data')\
+        .config('spark.jars.packages', 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.15.1-beta,com.google.cloud.bigdataoss:gcs-connector:hadoop3-1.9.18')\
+        .config('spark.hadoop.fs.gs.impl','com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem')\
+        .config('spark.jars.packages', 'neo4j-contrib:neo4j-connector-apache-spark_2.11:4.0.1')\
+        .getOrCreate()
 
 ## change localhost to 34.87.46.194 when deploying
 '''
@@ -64,12 +79,12 @@ btc_tweeted_users_relations.show()
 vertex = btc_tweeted_users_relations.select("screen_name","id","description","followers_count")
 edges = btc_tweeted_users_relations.select("id", "`target.id_str`","`<rel.type>`").selectExpr("`<rel.type>` as relationship", "id as src", "`target.id_str` as dst")
 
-# print('Vertex coming up')
-# vertex.show()
-#
-# print('Edges coming up')
-# edges.show()
-from graphframes import GraphFrame
+print('Vertex:')
+vertex.show()
+
+print('Edges:')
+edges.show()
+
 logging.info('Building graphframe')
 g = GraphFrame(vertex,edges)
 
@@ -77,8 +92,18 @@ g = GraphFrame(vertex,edges)
 
 logging.info('Applying degree centrality')
 total_degree = g.degrees
+total_degree.show()
+
 in_degree = g.inDegrees
+in_degree.show()
+
 out_degree = g.outDegrees
+out_degree.show()
+
+project_id = 'direct-analog-308416'
+client = bigquery.Client(credentials= cred[0],project=cred[1])
+
+logging.info('Merging...')
 
 deg_centrality = total_degree.join(in_degree, "id", how="left")\
     .join(out_degree, "id", how="left")\
@@ -86,6 +111,67 @@ deg_centrality = total_degree.join(in_degree, "id", how="left")\
     .sort("inDegree", ascending=False)
 
 deg_centrality.show()
+
+## save degree centrality results to BQ
+
+deg_centrality_table = 'direct-analog-308416:project_data.degree_centrality_results'
+
+logging.info('Writing Degree centrality data to BQ')
+
+deg_centrality.write.format('bigquery')\
+    .mode('overwrite')\
+    .option('table',deg_centrality_table)\
+    .save()
+
+logging.info('Done!')
+
+"""
+Pagerank
+damping factor = 1 - resetProbability
+damping factor defines the probability that the next click will be through a link (webpage context)
+"""
+
+results = g.pageRank(resetProbability=0.15, maxIter=20)
+#results.vertices.select("id", "pagerank").show()
+pagerank_res = results.vertices.sort("pagerank",ascending=False).show()
+
+## save pagerank results to BQ
+
+pagerank_table = 'direct-analog-308416:project_data.pagerank_results'
+
+logging.info('Writing Pagerank data to BQ')
+pagerank_res.write\
+    .format('bigquery')\
+    .mode('overwrite')\
+    .option('table',pagerank_table)\
+    .save()
+
+logging.info('Done!')
+#   .option("query", "MATCH (n:User) WHERE n.screen_name CONTAINS '' RETURN n.screen_name,n.id_str,n.description,n.followers_count")\
+
+"""
+Community Detection
+Triangle indicates that two of a node's neighbours are also neighbours value of 1 would mean the user is a part of a triangle
+"""
+logging.info('Triangle count algorithm')
+result = g.triangleCount()
+triangle_count = result.sort("count", ascending=False).filter('count > 0')
+triangle_count.show()
+
+
+## save triangle count results to BQ
+
+triangle_count_table = 'direct-analog-308416:project_data.triangle_count_results'
+
+logging.info('Writing Triangle Count data to BQ')
+triangle_count.write\
+    .format('bigquery')\
+    .mode('overwrite')\
+    .option('table',triangle_count_table)\
+    .save()
+
+logging.info('Done!')
+
 
 ## closeness centrality
 
@@ -112,22 +198,18 @@ closeness_centrality = g2.vertices\
 
 closeness_centrality.show()
 
-"""
-Pagerank
-damping factor = 1 - resetProbability
-damping factor defines the probability that the next click will be through a link (webpage context)
-"""
 
-results = g.pageRank(resetProbability=0.15, maxIter=20)
-#results.vertices.select("id", "pagerank").show()
-results.vertices.sort("pagerank",ascending=False).show()
-#   .option("query", "MATCH (n:User) WHERE n.screen_name CONTAINS '' RETURN n.screen_name,n.id_str,n.description,n.followers_count")\
+## save closeness centrality results to BQ
 
-"""
-Community Detection
-Triangle indicates that two of a node's neighbours are also neighbours value of 1 would mean the user is a part of a triangle
-"""
-logging.info('Triangle count algorithm')
-result = g.triangleCount()
-triangle_count = result.sort("count", ascending=False).filter('count > 0')
-triangle_count.show()
+closeness_centrality_table = 'direct-analog-308416:project_data.closeness_centrality'
+
+logging.info('Writing Closeness centrality data to BQ')
+
+closeness_centrality.write\
+    .format('bigquery')\
+    .mode('overwrite')\
+    .option('table',closeness_centrality_table)\
+    .save()
+
+logging.info('Completed Execution!')
+
