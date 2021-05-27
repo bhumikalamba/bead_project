@@ -144,3 +144,11 @@ warcio==1.7.4
 yarl==1.6.3
 zipp==3.4.1
 zope.interface==5.2.0
+pyspark==3.0.0
+google-auth==1.29.0
+google-cloud==0.34.0
+google-cloud-bigquery==2.12.0
+google-cloud-storage==1.37.1
+google-auth-oauthlib==0.4.4
+graphframes==0.6
+
