@@ -18,7 +18,21 @@ Code to accompany the following paper: Identification of Influential Online Prof
 ### 2) Data ingestion
 **Bitcoin price data**
 
+- Batch ingestion using bitfinex.instant.py
+- Command to trigger script `python bitfinex_instant.py --date 2021-04-05`
+
 **Twitter data**
+
+- Twitter streaming using Flume `Twitter.conf`. This Ingests data into Google Cloud Storage(GCS)
+- Twitter Historical data to fetch past 7 days data. Associated scripts *beginTwitterIngestion.py* and *twitterHistorical.py*
+	`python beginTwitterIngestion.py`
+  
+- Batch processing to get data from GCS, cleanse and store in Google BigQuery.
+  `python tweets-gcs-pyspark.py`
+  
+- Batch Processing to get twitter followers ID and ingest into neo4j database. Associated scripts *IngestFollowers-neo4j.py* & *model.py*
+  `python IngestFollowers-neo4j.py`
+
 
 **Online news data**
 - Clone the [news-please repository](https://github.com/fhamborg/news-please) to ./newsArticles/. Our highest gratitude and appreciation to the news-please team for making it a breeze to extract data from commoncrawl.org. A million thanks to the [Common Crawl team](https://commoncrawl.org/about/team/) as well for crawling the web.
@@ -44,3 +58,18 @@ Code to accompany the following paper: Identification of Influential Online Prof
 - We further filter the articles by only those that contain keywords that are related to Bitcoin. Adjust the parameters in the "YOUR CONFIG" section of newsArticles/parse_kw_language.py
 - Dump this batch of articles to the database. Run: `python3 parse_kw_language.py`
 - This is a batch process. Repeat the steps when there are new warc files by Common Crawl.
+
+### 3) Data Processing
+
+**Who To Follow - WTF**
+
+- Batch Process to...
+
+**Apply GraphAlgorithms using PySpark**
+
+- Batch Processing to apply Graph algorithms and save the data into BigQuery. Associated Script *neo4j-pyspark-conn.py* & *closeness_centrality.py*
+  `python neo4j-pyspark-conn.py`
+  
+- Interim scripts to download data from neo4j and save it in JSON for analysis using Bloom.
+  *Interim-script-neo4j.py*
+  
