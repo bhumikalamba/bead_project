@@ -1,4 +1,4 @@
-## Codes for closeness centrality lifted from Neo4j_Graph_Algorithms.pdf ##
+# Codes for closeness centrality lifted from Neo4j_Graph_Algorithms.pdf ##
 
 from graphframes.lib import AggregateMessages as AM
 from pyspark.sql import functions as F

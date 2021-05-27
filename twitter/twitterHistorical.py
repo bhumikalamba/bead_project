@@ -17,15 +17,15 @@ class IngestHistoricalData(object):
     service_account_file_path = cwd + '/direct-analog-308416-736bf46c2284.json'
     rows_to_insert = []
     bigquery_client = bigquery.Client.from_service_account_json(service_account_file_path)
-    table_id = "direct-analog-308416.project_data.tweets-data-2"
+    table_id = "direct-analog-308416.project_data.twitter_data_ingest"
     to_zone = tz.gettz('Asia/Singapore')
 
 
-    search_word = '#btc OR bitcoin OR #blockchain OR #cryptocurrency OR #cryptocurrencies OR #crypto OR #satoshi -filter:retweets'
+    search_word = '#btc OR bitcoin OR #blockchain OR #crypto OR #satoshi -filter:retweets'
 
     def stream_tweets_to_bigquery(self,api,start_date,end_date):
        count = 0
-       for tweet in tweepy.Cursor(api.search, q=self.search_word,lang='en',since=start_date, until=end_date).items(10):
+       for tweet in tweepy.Cursor(api.search, q=self.search_word,lang='en',since=start_date, until=end_date).items(500000):
            tweet_datetime = datetime.strptime(tweet._json.get('created_at'), '%a %b %d %H:%M:%S %z %Y').astimezone(self.to_zone).replace(tzinfo=None)
            twitter_datetime_hour = tweet_datetime.replace(microsecond=0, second=0, minute=0)
            created_at_datetime = datetime.strptime(tweet._json.get('user').get('created_at') , '%a %b %d %H:%M:%S %z %Y').replace(tzinfo=None)
@@ -44,7 +44,6 @@ class IngestHistoricalData(object):
                u'tweet':tweet._json.get('text'),
                u'truncated':bool(tweet._json.get('truncated'))
            }
-           print(json_data)
            self.rows_to_insert.append(json_data)
            count = count + 1
            self.insert_to_bigquery(self.rows_to_insert)

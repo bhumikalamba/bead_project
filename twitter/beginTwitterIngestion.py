@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 
 cwd = os.getcwd()
 
-_start_date = '2021-03-29'  ## Amend start date for a different timeperiod
+_start_date = '2021-04-03'  ## Amend start date for a different timeperiod
 json_data = None
 
 json_file_path = cwd + "/" + "twitterTokens.json"

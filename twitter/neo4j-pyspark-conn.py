@@ -19,7 +19,7 @@ spark-submit --jars gs://spark-lib/bigquery/spark-bigquery_2.12-0.10.0-beta-shad
 GOOGLE_APPLICATION_CREDENTIALS = './direct-analog-308416-f082eab9c7fa.json'
 cred = google.auth.load_credentials_from_file(GOOGLE_APPLICATION_CREDENTIALS)
 
-spark = SparkSession.builder.master('yarn').\
+spark = SparkSession.builder.\
         appName('READ Neo4j data')\
         .config('spark.jars.packages', 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.15.1-beta,com.google.cloud.bigdataoss:gcs-connector:hadoop3-1.9.18')\
         .config('spark.hadoop.fs.gs.impl','com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem')\
@@ -56,7 +56,6 @@ src_tgt_df = spark.read.format("org.neo4j.spark.DataSource") \
 #df.select('`<target>`.`id_str`').show(5,truncate=False)
 #df.select('`<target>`.`id_str`').show(20,truncate=False)
 #df.where('`<target>`.`screen_name` == ""').show()
-# print('HEYY')
 #edges = df.select("`<rel.type>`","`source.id_str`","`target.id_str`").selectExpr("`<rel.type>` as relationship", "`source.id_str` as src", "`target.id_str` as dst")
 
 
@@ -70,57 +69,85 @@ btc_tweeted_users = spark.read.format("org.neo4j.spark.DataSource") \
   .load()
 
 
-
-
 btc_tweeted_users_relations = btc_tweeted_users.join(src_tgt_df, btc_tweeted_users.id == src_tgt_df['`source.id_str`'], how='left').na.drop(subset=["`<rel.type>`"])
 
 btc_tweeted_users_relations.show()
 
-vertex = btc_tweeted_users_relations.select("screen_name","id","description","followers_count")
-edges = btc_tweeted_users_relations.select("id", "`target.id_str`","`<rel.type>`").selectExpr("`<rel.type>` as relationship", "id as src", "`target.id_str` as dst")
+#vertex = btc_tweeted_users_relations.select("screen_name","id","description","followers_count")
+vertex = btc_tweeted_users_relations.select("id")
+edges = btc_tweeted_users_relations.select("id", "`target.id_str`","`<rel.type>`").selectExpr("`<rel.type>` as weight", "id as From", "`target.id_str` as To")
 
+#edges.write.csv('edges.csv')
+
+# vertex = vertex.limit(30)
+# edges = edges.limit(30)
 print('Vertex:')
 vertex.show()
 
+
 print('Edges:')
 edges.show()
-
+#
 logging.info('Building graphframe')
 g = GraphFrame(vertex,edges)
 
-## Degree centrality
-
+# ## Degree centrality
 logging.info('Applying degree centrality')
 total_degree = g.degrees
 total_degree.show()
 
+total_degree.printSchema()
+
+print('Total deg',total_degree.count())
+
+deg_table = 'project_data.degree'
+total_degree.write.format('bigquery')\
+    .mode('overwrite')\
+    .option('table',deg_table)\
+    .save()
+
 in_degree = g.inDegrees
 in_degree.show()
 
+# in_degree_table = 'project_data.in_degree'
+# in_degree.write.format('bigquery')\
+#     .mode('overwrite')\
+#     .option('table',in_degree_table)\
+#     .save()
+
+in_degree.printSchema()
 out_degree = g.outDegrees
 out_degree.show()
 
+# out_degree_table = 'project_data.out_degree'
+# out_degree.write.format('bigquery')\
+#     .mode('overwrite')\
+#     .option('table',out_degree_table)\
+#     .save()
+
+out_degree.printSchema()
+# #
+# # print(' Out deg',out_degree.count())
+#
 project_id = 'direct-analog-308416'
 client = bigquery.Client(credentials= cred[0],project=cred[1])
 
 logging.info('Merging...')
-
+# #
 deg_centrality = total_degree.join(in_degree, "id", how="left")\
     .join(out_degree, "id", how="left")\
     .fillna(0)\
     .sort("inDegree", ascending=False)
-
-deg_centrality.show()
+deg_centrality.printSchema()
 
 ## save degree centrality results to BQ
 
-deg_centrality_table = 'direct-analog-308416:project_data.degree_centrality_results'
+deg_table = 'direct-analog-308416:project_data.degree'
 
 logging.info('Writing Degree centrality data to BQ')
-
 deg_centrality.write.format('bigquery')\
     .mode('overwrite')\
-    .option('table',deg_centrality_table)\
+    .option('table',deg_table)\
     .save()
 
 logging.info('Done!')
@@ -130,12 +157,13 @@ Pagerank
 damping factor = 1 - resetProbability
 damping factor defines the probability that the next click will be through a link (webpage context)
 """
-
-results = g.pageRank(resetProbability=0.15, maxIter=20)
+print('Attempting pagerank')
+results = g.pageRank(resetProbability=0.15, maxIter=1)
+print(results)
 #results.vertices.select("id", "pagerank").show()
 pagerank_res = results.vertices.sort("pagerank",ascending=False).show()
 
-## save pagerank results to BQ
+# save pagerank results to BQ
 
 pagerank_table = 'direct-analog-308416:project_data.pagerank_results'
 
@@ -153,28 +181,33 @@ logging.info('Done!')
 Community Detection
 Triangle indicates that two of a node's neighbours are also neighbours value of 1 would mean the user is a part of a triangle
 """
+
+#
 logging.info('Triangle count algorithm')
 result = g.triangleCount()
 triangle_count = result.sort("count", ascending=False).filter('count > 0')
-triangle_count.show()
-
-
-## save triangle count results to BQ
-
-triangle_count_table = 'direct-analog-308416:project_data.triangle_count_results'
+#triangle_count.show()
+#
+#
+# ## save triangle count results to BQ
+#
+triangle_count_table = 'project_data.triangle_count_results'
 
 logging.info('Writing Triangle Count data to BQ')
+
+
+#triangle_count.write.csv('triangle_count.csv')
 triangle_count.write\
-    .format('bigquery')\
+    .format('bigquery') \
     .mode('overwrite')\
     .option('table',triangle_count_table)\
     .save()
-
+#
 logging.info('Done!')
-
-
-## closeness centrality
-
+#
+# #
+# ## closeness centrality
+#
 vertices = g.vertices.withColumn("ids", F.array())
 cached_vertices = AM.getCachedDataFrame(vertices)
 g2 = GraphFrame(cached_vertices, g.edges)
@@ -192,12 +225,13 @@ for i in range(0, g2.vertices.count()):
     cached_new_vertices = AM.getCachedDataFrame(new_vertices)
     g2 = GraphFrame(cached_new_vertices, g2.edges)
 
+
 closeness_centrality = g2.vertices\
     .withColumn("closeness", closeness_udf("ids"))\
     .sort("closeness", ascending=False)
 
+# closeness_centrality.write.csv('Closeness_centrality.csv')
 closeness_centrality.show()
-
 
 ## save closeness centrality results to BQ
 
@@ -212,4 +246,3 @@ closeness_centrality.write\
     .save()
 
 logging.info('Completed Execution!')
-

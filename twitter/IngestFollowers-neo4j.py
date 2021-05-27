@@ -1,21 +1,14 @@
 from pyspark.sql import SparkSession
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime
-import pytz
-from itertools import cycle
-import numpy as np
 from google.cloud import bigquery
-from google.oauth2 import service_account
 import pyspark.sql.functions as F
-from pyspark import *
 import tweepy
 from tweepy import API
 import logging
+import google.auth
 from GetFollowers import *
 from pyspark.sql.functions import col
+from pyspark.sql.types import *
+from google.cloud import bigquery_storage
 
 
 CONSUMER_KEY = "7dJU7wZSHhZwTNXshgczruB7Q"
@@ -30,63 +23,72 @@ logging.basicConfig(level=logging.INFO)
 
 
 os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJtxMQEAAAAAJZmeOOGETISoJvjAbS1loA3BU0A%3DA3Qdf8LFDm81fyl6rkKd2W1AfHGbkEXYRctvW7zumvsTLmp9nT'
-#os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJxRNQEAAAAAd9lCTHl5MjHWqnQnPxAvvpUkhU4%3DD5ywyPyd8fsdCFwfITvIEaWy0WK2OP3Bq7hg58LkWU1B9JwkUc'
 
-GOOGLE_APPLICATION_CREDENTIALS="C:/Users/Suren/Documents/nice-forge-305606-0c1b603cf119.json"
+GOOGLE_APPLICATION_CREDENTIALS="./direct-analog-308416-f082eab9c7fa.json"
+cred = google.auth.load_credentials_from_file(GOOGLE_APPLICATION_CREDENTIALS)
+PROJECT_ID = 'direct-analog-308416'
+client = bigquery.Client(credentials= cred[0],project=cred[1])
 
-spark = SparkSession.builder.appName('READ twitter CSV files').getOrCreate()
+spark = SparkSession.builder.appName('READ From BigQuery').\
+    config('spark.jars.packages', 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.15.1-beta').getOrCreate()
 
-# NOTE TO SURENDHAR: changed to import *
-from pyspark.sql.types import *
+bqclient = bigquery.Client(credentials=cred[0], project=cred[1],)
+bqstorageclient = bigquery_storage.BigQueryReadClient(credentials=cred[0])
 
-### BIG QUERY CONNECTION CHECK OUT LATER
+query_string = """
+SELECT twitter_handle_name,twitter_handle_id,twitter_handle_desc,followers_count,friends_count FROM `direct-analog-308416.project_data.tweets_data`
+"""
 
-# credentials = service_account.Credentials.from_service_account_file('C:/Users/suren/Documents/bead_project/direct-analog-308416-f082eab9c7fa.json')
-# project_id = 'direct-analog-308416'
-# client = bigquery.Client(credentials= credentials,project=project_id)
-# QUERY = (
-#     'SELECT * FROM `direct-analog-308416.project_data.twitter_data_ingest` ')
-# query_job = client.query(QUERY)  # API request
-# rows = query_job.result()  # Waits for query to finish
-#
-# print('type',type(rows))
-#
-# print(rows)
+tweets = (
+    bqclient.query(query_string)
+    .result()
+    .to_dataframe(bqstorage_client=bqstorageclient)
+)
+
+
 
 ###
 
 ### USING CSV FILES
 
 # NOTE TO SURENDHAR: use this schema. will parse through the values and use null if the value doesn't make sense.
+# tweets_schema = StructType([
+#     StructField('tweet_id',StringType(),True),
+#     StructField('twitter_handle_name',StringType(),True),
+#     StructField('twitter_handle_id',StringType(),True),
+#     StructField('tweet_datetime',TimestampType(),True),
+#     StructField('twitter_handle_desc',StringType(),True),
+#     StructField('followers_count',IntegerType(),True),
+#     StructField('friends_count',IntegerType(),True),
+#     StructField('listed_count',IntegerType(),True),
+#     StructField('created_at_datetime',TimestampType(),True),
+#     StructField('tweet_datetime_hour',TimestampType(),True),
+#     StructField('statuses_count',IntegerType(),True),
+#     StructField('tweet',StringType(),True),
+#     StructField('truncated',BooleanType(),True)
+# ])
 tweets_schema = StructType([
-    StructField('tweet_id',StringType(),True),
     StructField('twitter_handle_name',StringType(),True),
     StructField('twitter_handle_id',StringType(),True),
-    StructField('tweet_datetime',TimestampType(),True),
     StructField('twitter_handle_desc',StringType(),True),
-    StructField('followers_count',IntegerType(),True),
-    StructField('friends_count',IntegerType(),True),
-    StructField('listed_count',IntegerType(),True),
-    StructField('created_at_datetime',TimestampType(),True),
-    StructField('twitter_datetime_hour',TimestampType(),True),
-    StructField('statuses_count',IntegerType(),True),
-    StructField('tweet',StringType(),True),
-    StructField('truncated',BooleanType(),True)
+    StructField('followers_count',FloatType(),True),
+    StructField('friends_count',FloatType(),True)
 ])
+df = spark.createDataFrame(tweets,schema=tweets_schema)
 
-# NOTE TO SURENDHAR: addded option('mode','DROMPMALFORMED') and used the custom schema
-df = spark.read.format('csv')\
-    .option("header","true")\
-    .option('mode','DROPMALFORMED')\
-    .schema(tweets_schema) \
-    .load("bq-results-full.csv")
+
+# addded option('mode','DROMPMALFORMED') and used the custom schema
+# df = spark.read.format('csv')\
+#     .option("header","true")\
+#     .option('mode','DROPMALFORMED')\
+#     .schema(tweets_schema) \
+#     .load("bq-results-full.csv")
 
 df.show()
 df.printSchema()
 
 
 ## Drop duplicate tweets
-# NOTE TO SURENDHAR: I selected just columns at the twitter ID level first before de-dup.
 df2 = df\
     .select('twitter_handle_name','twitter_handle_id','twitter_handle_desc','followers_count','friends_count')\
     .dropDuplicates()\
@@ -95,22 +97,19 @@ df2 = df\
 
 df2.show()
 
-# NOTE TO SURENDHAR: Using >= and <=
+
 df_filtered = df \
     .select('twitter_handle_name','twitter_handle_id','twitter_handle_desc','followers_count','friends_count') \
     .filter((df['followers_count'] >= int(df2.select("50-percentile").first()[0])) & (df['followers_count'] <= int(df2.select("75-percentile").first()[0])))\
     .dropDuplicates(['twitter_handle_id'])\
     .sort(col("followers_count").desc())
 
-df_filtered.show(50)
-
-logging.info('The script will run for approximately %s hours' % str((df_filtered.select(F.sum('followers_count')).collect()[0][0]/ 75000) * 15/60))
+df_filtered.show(10)
 
 user_lists = df_filtered.select(["twitter_handle_id","twitter_handle_name","twitter_handle_desc","followers_count","friends_count"]).rdd.flatMap(lambda x: [x]).collect()
 
 
-
-
+## Below codes connect to twitter API to get the followers ID
 def auth():
     return os.environ.get("BEARER_TOKEN")
 
@@ -148,13 +147,6 @@ def load_data_from_json(filename):
         data = json.load(fp)
     return data
 
-# def export_else_append(data, filename):
-#     if os.path.isfile(filename):
-#         print("File exist & appended")
-#         apppend_data_to_json(data, filename)
-#     else:
-#         print("File not exist. New File created.")
-#         export_data_to_json(data, filename)
 
 def create_graph(data,main_node):
     for user in data['ids']:
@@ -162,7 +154,7 @@ def create_graph(data,main_node):
         user_cre[0].follows.connect(main_node[0])
         user_cre[0].save()
 
-#def main():
+
 def begin_ingestion(user_id):
     bearer_token = auth()
     url = create_url(user_id[0])
@@ -176,22 +168,34 @@ def begin_ingestion(user_id):
     params = get_params(nextcursor)
     json_response = connect_to_endpoint(url, headers, params)
     create_graph(json_response,main_node)
-    #print(json.dumps(json_response, indent=4, sort_keys=True)
     export_data_to_json(json_response, "followers{}.json".format(currfilecount))
 
+exported_IDs = list()
+
+for file in glob.glob("*twitter*"):
+    if '\\' in file:
+        exported_IDs.append(file.split('\\')[1])
 
 for user in user_lists:
     user_id = user
+
     # set up first file count
     api = API(tweepy_auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     user_exist = True
-    try:
-        user_obj = api.get_user(user_id[0])
-        if user_obj.protected == True:
-            user_exist = False
-    except Exception as ex:
+    logging.info('Loading for user, %s',str(user_id[1]))
+    if user_id[0] in exported_IDs:
         user_exist = False
-        logging.info("User account no longer exists in Twitter.")
+
+    if user_exist == True and user_id[0].isdigit():
+        try:
+            user_obj = api.get_user(user_id[0])
+            if user_obj.protected == True:
+                user_exist = False
+        except Exception as ex:
+            user_exist = False
+            logging.info("User account no longer exists in Twitter. %s",str(user[1]))
+    else:
+        user_exist = False
 
     if user_exist:
         currfilecount = 1
@@ -201,7 +205,7 @@ for user in user_lists:
             # get first page of results & export to json
             begin_ingestion(user_id)
         except Exception as ex:
-            print('what uh', ex)
+            print('Exception occured on level 1',ex)
             # if unable to get first page of results, sleep and retry
             logging.info('sleeping for 15 mins')
             time.sleep(60 * 15)
@@ -226,7 +230,8 @@ for user in user_lists:
                 # call API with updated nextcursor and export to new json file
                 #main()
                 begin_ingestion(user_id)
-            except:
+            except Exception as ex:
+                print('Exception occured on level 2',ex)
                 # sleep for 15 minutes if error, and try again
                 logging.info('Sleeping for 15 mins')
                 time.sleep(60 * 15)

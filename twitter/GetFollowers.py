@@ -7,20 +7,16 @@
 # reference for get_params()
 # https://developer.twitter.com/en/docs/twitter-api/v1/accounts-and-users/follow-search-get-users/api-reference/get-followers-ids
 
-
 import requests
 import os
 import json
 import time
 import shutil
 from model import User
-import csv
 import pandas
 
-# To set your environment variables in your terminal run the following line:
-# export 'BEARER_TOKEN'='<your_bearer_token>'
+
 os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJtxMQEAAAAAJZmeOOGETISoJvjAbS1loA3BU0A%3DA3Qdf8LFDm81fyl6rkKd2W1AfHGbkEXYRctvW7zumvsTLmp9nT'
-#os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJxRNQEAAAAAd9lCTHl5MjHWqnQnPxAvvpUkhU4%3DD5ywyPyd8fsdCFwfITvIEaWy0WK2OP3Bq7hg58LkWU1B9JwkUc'
 
 GOOGLE_APPLICATION_CREDENTIALS="C:/Users/Suren/Documents/nice-forge-305606-0c1b603cf119.json"
 
@@ -28,14 +24,6 @@ GOOGLE_APPLICATION_CREDENTIALS="C:/Users/Suren/Documents/nice-forge-305606-0c1b6
 def auth():
     return os.environ.get("BEARER_TOKEN")
 
-# example to get first page of followers from one user id
-    #def create_url():
-    #    # Replace with user ID below
-    #    user_id = 44196397  #elon musk user id 44196397
-    #    return "https://api.twitter.com/2/users/{}/followers".format(user_id)
-
-    #def get_params():
-    #    return {"user.fields": "created_at"}
 
 def create_url(user_id):
     # Replace with user ID below
@@ -75,13 +63,7 @@ def load_data_from_json(filename):
         data = json.load(fp)
     return data
 
-# def export_else_append(data, filename):
-#     if os.path.isfile(filename):
-#         print("File exist & appended")
-#         apppend_data_to_json(data, filename)
-#     else:
-#         print("File not exist. New File created.")
-#         export_data_to_json(data, filename)
+
 
 def create_graph(data,main_node):
     for user in data['ids']:
@@ -160,34 +142,6 @@ if __name__ == "__main__":
                 shutil.move(f,dest)
         print("files moved into user_id {} folder".format(user_id[0]))
 
-##########################################################
-##########################################################
-##########################################################
-
-#time.sleep(60*15)
-#print('times up!')
-# rate limit 15 request in 15 minutes, 5000 each requests
 
 
-# SAMPLE ERROR MESSAGE FOR TWITTER
-#Traceback (most recent call last):
-#  File "<input>", line 12, in <module>
-#  File "<input>", line 74, in main
-#  File "<input>", line 44, in connect_to_endpoint
-#Exception: Request returned an error: 429 {"errors":[{"message":"Rate limit exceeded","code":88}]}
-
-
-###### TEMP ###########
-#data = load_data_from_json("followers1.json")
-#print(data['next_cursor'])
-#print(data['previous_cursor'])
-#len(data['ids'])
-#print(data['ids'])
-
-#sgag_sg 587.9k followers
-
-#michaek saylor 569,042 will take 7.59 cycles x 15 minutes = 120 minutes (2 hrs)
-#kevin systrom 133,729 followers - will take 1.78 x 15 minutes
-#followers1 - next cursor = 1674029966258931775, previous_cursor = 0
-#followers2 - next cursor = 1664840710012508777 , previous cursor = -1674029888770414982
 

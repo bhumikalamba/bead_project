@@ -3,7 +3,7 @@ import bitfinex
 import pandas as pd
 import time
 import lib.date_util as date_util
-from lib.database import db
+#from lib.database import db
 from google.oauth2 import service_account
 from models.facts_bitfinex import FactsBitcoinPrice
 
@@ -75,10 +75,10 @@ def fetch_candle_data(start_date):
     import os
     cwd = os.getcwd()
 
-    path_to_json = cwd + '\\direct-analog-308416-f082eab9c7fa.json'
+    path_to_json = './direct-analog-308416-f082eab9c7fa.json'
     credentials = service_account.Credentials.from_service_account_file(path_to_json)
 
-    df.to_gbq(destination_table='project_data.bitcoin_data',
+    df.to_gbq(destination_table='project_data.bitcoin_data_demo',
               project_id='direct-analog-308416',chunksize=None,
               credentials=credentials,if_exists='replace')
     #
@@ -97,3 +97,4 @@ if __name__ == "__main__":
 
     start_date = str(args.date) if args.date else None
     fetch_candle_data(start_date)
+

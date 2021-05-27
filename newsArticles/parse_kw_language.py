@@ -9,11 +9,14 @@ from google.cloud import storage
 ############ YOUR CONFIG ############
 
 # dir for articles that were downloaded by commoncrawl.py
-my_input_file_path = "/home/susurendhar/BEAD/newsArticles/news-please/cc_download_articles"
+#my_input_file_path = "/home/susurendhar/BEAD/bead_project/newsArticles/news-please/cc_download_articles"
+my_input_file_path = "/home/susurendhar/BEAD/bead_project/newsArticles/cc_download_articles"
 # dir to save clean batch of articles temporarily in vm
-vm_file_path = '/home/susurendhar/BEAD/newsArticles/news-please/cc_store'
+#vm_file_path = '/home/susurendhar/BEAD/bead_project/newsArticles/news-please/cc_store'
+vm_file_path = "/home/susurendhar/BEAD/bead_project/newsArticles/cc_store"
 # GCS bucket to save data to
-my_bucket = "bead-data"
+#my_bucket = "bead-data-news"
+my_bucket = "bead-data-news-demo"
 # directory in GCS bucket to save data to
 my_bucket_folder = "newsArticles"
 
@@ -47,7 +50,7 @@ spark = SparkSession \
     .getOrCreate()
 
 sc = spark.sparkContext
-
+print(folders)
 
 # Functions
 ###########

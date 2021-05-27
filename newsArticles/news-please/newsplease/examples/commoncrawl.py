@@ -48,11 +48,11 @@ my_local_download_dir_article = './cc_download_articles/'
 # hosts (if None or empty list, any host is OK)
 my_filter_valid_hosts = ['forbes.com', 'cnn.com', 'seekingalpha.com', 'thestreet.com', 'marketwatch.com', 'coindesk.com', 'cointelegraph.com', 'todayonchain.com','newsbtc.com', 'cryptoslate.com']  # example: ['elrancaguino.cl']
 # start date (if None, any date is OK as start date), as datetime
-my_filter_start_date = datetime.datetime(2021, 3, 1) # None
+my_filter_start_date = datetime.datetime(2021, 5, 26) # None
 # end date (if None, any date is OK as end date), as datetime
 my_filter_end_date = None #datetime.datetime(2021, 2, 11) # None
 # if date filtering is strict and news-please could not detect the date of an article, the article will be discarded
-my_warc_files_start_date = datetime.datetime(2021, 3, 1) #None
+my_warc_files_start_date = datetime.datetime(2021, 5, 26) #None
 my_filter_strict_date = True
 # if True, the script checks whether a file has been downloaded already and uses that file instead of downloading
 # again. Note that there is no check whether the file has been downloaded completely or is valid!
