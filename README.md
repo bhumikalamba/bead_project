@@ -65,7 +65,7 @@ Code to accompany the following paper: Identification of Influential Online Prof
 
 - Batch Process on PySpark to filter data, get intermediary features (# of Tweets/Articles Published, # of Tweets/Articles Published in Golden Window, # of Golden Window Hits) and output the final WTF Score for Twitter users and News Sources.
 Associated Script *getWTF.py* runs on local machine & *getWTF_tweetsBQ.py* with Google BigQuery connector that could be submitted as a Spark job on Google Dataproc.
-'''spark-submit --jars gs://spark-lib/bigquery/spark-bigquery_2.12-0.10.0-beta-shaded.jar --driver-memory 5g --executor-memory 5g getWTF_tweetsBQ.py'''
+```spark-submit --jars gs://spark-lib/bigquery/spark-bigquery_2.12-0.10.0-beta-shaded.jar --driver-memory 5g --executor-memory 5g getWTF_tweetsBQ.py```
 
 **Apply GraphAlgorithms using PySpark**
 
