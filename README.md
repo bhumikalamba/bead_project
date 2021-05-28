@@ -14,6 +14,21 @@ Code to accompany the following paper: Identification of Influential Online Prof
 		- C:\spark-2.4.7-bin-hadoop2.7\python\
 		- C:\spark-2.4.7-bin-hadoop2.7\python\lib\py4j-0.10.7-src.zip
 		- C:\spark-2.4.7-bin-hadoop2.7\python\lib\pyspark.zip
+- To run the project on Google Cloud Platform (GCP), you will need a Google account set-up. More information can be found: 
+	- https://cloud.google.com/gcp/
+	- Google Products used in this project:
+		- Google Compute Engine
+		- Google Dataproc
+		- Google BigQuery
+		- Google Cloud Storage
+- To install Neo4j Desktop:
+	- https://neo4j.com/docs/operations-manual/current/installation/
+	- Neo4j Bloom client comes pre-packaged within Neo4j Desktop.
+	- Graph Data Science Playground (Neuler) could be installed under "Graph Apps" pane in Neo4j Desktop with this URL: 
+		- https://neo.jfrog.io/neo/api/npm/npm/neuler
+	- More installations information on plugins used: 
+		- APOC - https://neo4j.com/labs/apoc/4.2/installation/
+		- Graph Data Science Library - https://neo4j.com/docs/graph-data-science/1.6/
 
 ### 2) Data ingestion
 **Bitcoin price data**
