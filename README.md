@@ -63,7 +63,9 @@ Code to accompany the following paper: Identification of Influential Online Prof
 
 **Who To Follow - WTF**
 
-- Batch Process to...
+- Batch Process on PySpark to filter data, get intermediary features (# of Tweets/Articles Published, # of Tweets/Articles Published in Golden Window, # of Golden Window Hits) and output the final WTF Score for Twitter users and News Sources.
+- 
+Associated Script *getWTF_tweetsBQ.py* with Google BigQuery connector & *getWTF.py* runs on local machine. 
 
 **Apply GraphAlgorithms using PySpark**
 
