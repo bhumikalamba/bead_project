@@ -29,24 +29,45 @@ Code to accompany the following paper: Identification of Influential Online Prof
 	- More installations information on plugins used: 
 		- APOC - https://neo4j.com/labs/apoc/4.2/installation/
 		- Graph Data Science Library - https://neo4j.com/docs/graph-data-science/1.6/
+	
+- Jars required
+	- `com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.15.1-beta`
+	- `gs://neo4j-jar/graphframes-0.8.0-spark3.0-s_2.12.jar `
+	- `gs://neo4j-jar/neo4j-connector-apache-spark_2.12-4.0.1_for_spark_3.jar`
+	- `gcs-connector-hadoop2-2.0.1.jar`
+	- `flume-sources-1.0-SNAPSHOT.jar`
 
 ### 2) Data ingestion
 **Bitcoin price data**
 
 - Batch ingestion using bitfinex.instant.py
 - Command to trigger script `python bitfinex_instant.py --date 2021-04-05`
+- **Path** `bead_project/bitfinex/bitfinex_instant.py`
 
 **Twitter data**
 
 - Twitter streaming using Flume `Twitter.conf`. This Ingests data into Google Cloud Storage(GCS)
-- Twitter Historical data to fetch past 7 days data. Associated scripts *beginTwitterIngestion.py* and *twitterHistorical.py*
-	`python beginTwitterIngestion.py`
   
+- **Path** `bead_project/twitter/Flume-Streaming`
+
+
 - Batch processing to get data from GCS, cleanse and store in Google BigQuery.
   `python tweets-gcs-pyspark.py`
   
+- **Path** `/bead_project/BatchProcess-GCS-BQ/tweets-gcs-pyspark.py`
+  
+
+- Twitter Historical data to fetch past 7 days data. Associated scripts *beginTwitterIngestion.py* and *twitterHistorical.py*
+	`python beginTwitterIngestion.py`
+  
+- **Path** `/bead_project/getPast7Days/beginTwitterIngestion.py` & `/bead_project/getPast7Days/twitterHistorical.py`
+
+ 
+
 - Batch Processing to get twitter followers ID and ingest into neo4j database. Associated scripts *IngestFollowers-neo4j.py* & *model.py*
   `python IngestFollowers-neo4j.py`
+  
+- **Path** `/bead_project/neo4jInjestion/IngestFollowers-neo4j.py` & `bead_project/twitter/neo4jInjestion/model.py`
 
 
 **Online news data**
@@ -81,12 +102,21 @@ Code to accompany the following paper: Identification of Influential Online Prof
 - Batch Process on PySpark to filter data, get intermediary features (# of Tweets/Articles Published, # of Tweets/Articles Published in Golden Window, # of Golden Window Hits) and output the final WTF Score for Twitter users and News Sources.
 Associated Script *getWTF.py* runs on local machine & *getWTF_tweetsBQ.py* with Google BigQuery connector that could be submitted as a Spark job on Google Dataproc.
 ```spark-submit --jars gs://spark-lib/bigquery/spark-bigquery_2.12-0.10.0-beta-shaded.jar --driver-memory 5g --executor-memory 5g getWTF_tweetsBQ.py```
+  
+- **Path** `/bead_project/wtf/getWTF_tweetsBQ.py`
+
+- Batch process on Pyspark to compute WTF scores for news domains?
+
 
 **Apply GraphAlgorithms using PySpark**
 
 - Batch Processing to apply Graph algorithms and save the data into BigQuery. Associated Script *neo4j-pyspark-conn.py* & *closeness_centrality.py*
   `python neo4j-pyspark-conn.py`
   
+- **Path** `bead_project/twitter/neo4j-pyspark-conn.py` & `closness_centrality.py`
+  
 - Interim scripts to download data from neo4j and save it in JSON for analysis using Bloom.
   *Interim-script-neo4j.py*
+  **Path** `/bead_project/twitter/Interim-script-neo4j.py`  & `/bead_project/twitter/append_bio_twitter_id.py`
+  
   
