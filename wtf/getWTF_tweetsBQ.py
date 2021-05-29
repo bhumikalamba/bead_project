@@ -218,13 +218,13 @@ spark.conf.set("materializationDataset","<dataset>")
 #use SQL statement to transfer only the results
 sql = """
 SELECT tweet_id, twitter_handle_name, twitter_handle_id, tweet_datetime
-FROM 'direct-analog-308416.project_data.twitter_data_ingest' a
+FROM 'direct-analog-308416.project_data.twitter_data_flume' a
 WHERE tweet_datetime >= '2021-03-30' AND tweet_datetime <= '2021-04-03'
 LIMIT 10 
 """
 tweets = spark.read\
     .format('bigquery') \
-    .option('table', 'direct-analog-308416.project_data.twitter_data_ingest') \
+    .option('table', 'direct-analog-308416.project_data.twitter_data_flume') \
     .option('credentialsFile', GOOGLE_APPLICATION_CREDENTIALS) \
     .load(sql)
 
