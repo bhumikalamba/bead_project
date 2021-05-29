@@ -36,6 +36,7 @@ Code to accompany the following paper: Identification of Influential Online Prof
 	- `gs://neo4j-jar/neo4j-connector-apache-spark_2.12-4.0.1_for_spark_3.jar`
 	- `gcs-connector-hadoop2-2.0.1.jar`
 	- `flume-sources-1.0-SNAPSHOT.jar`
+	- `gs://spark-lib/bigquery/spark-bigquery_2.12-0.10.0-beta-shaded.jar`
 
 ### 2) Data ingestion
 **Bitcoin price data**
