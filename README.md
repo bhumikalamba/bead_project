@@ -105,9 +105,6 @@ Associated Script *getWTF.py* runs on local machine & *getWTF_tweetsBQ.py* with 
   
 - **Path** `/bead_project/wtf/getWTF_tweetsBQ.py`
 
-- Batch process on Pyspark to compute WTF scores for news domains?
-
-
 **Apply GraphAlgorithms using PySpark**
 
 - Batch Processing to apply Graph algorithms and save the data into BigQuery. Associated Script *neo4j-pyspark-conn.py* & *closeness_centrality.py*
