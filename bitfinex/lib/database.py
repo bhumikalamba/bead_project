@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 
 from psycopg2 import sql
 
-DBCONN_STR = "dbname='postgres' user='bhumika' host='34.87.112.231' password='doomsday13' connect_timeout=20"
+DBCONN_STR = "dbname='postgres' user='bhumika' host='ip-add' password='password' connect_timeout=20"
 
 
 
