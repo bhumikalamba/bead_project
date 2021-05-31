@@ -41,10 +41,10 @@ this pulls the executes the query and pulls the data
 .option("query", "MATCH (n:User) WHERE n.screen_name CONTAINS '' RETURN n.screen_name,n.id_str,n.description,n.followers_count")\
 '''
 src_tgt_df = spark.read.format("org.neo4j.spark.DataSource") \
-  .option("url", "bolt://34.87.46.194:7687") \
+  .option("url", "bolt://ip_add:7687") \
   .option("authentication.type", "basic") \
-  .option("authentication.basic.username", "neo4j") \
-  .option("authentication.basic.password", "$martBEAD&") \
+  .option("authentication.basic.username", "username") \
+  .option("authentication.basic.password", "password") \
   .option("relationship","FOLLOWS") \
   .option("relationship.nodes.map", "false")\
   .option("relationship.source.labels", "User")\
