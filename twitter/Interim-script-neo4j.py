@@ -25,10 +25,10 @@ spark = SparkSession.builder.\
         .getOrCreate()
 
 src_tgt_df = spark.read.format("org.neo4j.spark.DataSource") \
-  .option("url", "bolt://34.87.46.194:7687") \
+  .option("url", "bolt://ip-add:7687") \
   .option("authentication.type", "basic") \
-  .option("authentication.basic.username", "neo4j") \
-  .option("authentication.basic.password", "$martBEAD&") \
+  .option("authentication.basic.username", "uname") \
+  .option("authentication.basic.password", "password") \
   .option("relationship","FOLLOWS") \
   .option("relationship.nodes.map", "false")\
   .option("relationship.source.labels", "User")\
@@ -37,10 +37,10 @@ src_tgt_df = spark.read.format("org.neo4j.spark.DataSource") \
 
 
 btc_tweeted_users = spark.read.format("org.neo4j.spark.DataSource") \
-  .option("url", "bolt://34.87.46.194:7687") \
+  .option("url", "bolt://ip-add") \
   .option("authentication.type", "basic") \
-  .option("authentication.basic.username", "neo4j") \
-  .option("authentication.basic.password", "$martBEAD&") \
+  .option("authentication.basic.username", "uname") \
+  .option("authentication.basic.password", "password") \
   .option("query",
           "MATCH (n:User) WHERE n.screen_name CONTAINS '' RETURN n.screen_name as screen_name,n.id_str as id,n.description as description,n.followers_count as followers_count")\
   .load()
