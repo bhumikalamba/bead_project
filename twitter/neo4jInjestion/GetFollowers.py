@@ -16,8 +16,7 @@ from twitter.neo4jInjestion.model import User
 import pandas
 
 
-os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJtxMQEAAAAAJZmeOOGETISoJvjAbS1loA3BU0A%3DA3Qdf8LFDm81fyl6rkKd2W1AfHGbkEXYRctvW7zumvsTLmp9nT'
-
+os.environ['BEARER_TOKEN'] ='XXXXXXXXXXXX'
 GOOGLE_APPLICATION_CREDENTIALS="C:/Users/Suren/Documents/nice-forge-305606-0c1b603cf119.json"
 
 

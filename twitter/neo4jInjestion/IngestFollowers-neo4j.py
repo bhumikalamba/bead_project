@@ -11,10 +11,10 @@ from pyspark.sql.types import *
 from google.cloud import bigquery_storage
 
 
-CONSUMER_KEY = "7dJU7wZSHhZwTNXshgczruB7Q"
-CONSUMER_SECRET = "tbYF5yp3S0LjNIeV5XMkA33hhuYeuvYOuVVy1X6fgGxJeygWUp"
-ACCESS_TOKEN = "313172786-DtYVsYbcWXjDZMGuDIJY3tU8dm1Ax0oXl03RQ4Uz"
-ACCESS_SECRET =  "aBjwOguGu2bthYjC3xXxSOSbLac1C410B0o4pT9Akfir8"
+CONSUMER_KEY = "CONSUMER KEY"
+CONSUMER_SECRET = "COSUMER TOKEN"
+ACCESS_TOKEN = "ACCESS TOKEN"
+ACCESS_SECRET =  "ACCESS SECRET"
 
 tweepy_auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 tweepy_auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
@@ -22,7 +22,7 @@ tweepy_auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 logging.basicConfig(level=logging.INFO)
 
 
-os.environ['BEARER_TOKEN'] ='AAAAAAAAAAAAAAAAAAAAAJtxMQEAAAAAJZmeOOGETISoJvjAbS1loA3BU0A%3DA3Qdf8LFDm81fyl6rkKd2W1AfHGbkEXYRctvW7zumvsTLmp9nT'
+os.environ['BEARER_TOKEN'] ='BEARER TOKEN'
 
 GOOGLE_APPLICATION_CREDENTIALS="./direct-analog-308416-f082eab9c7fa.json"
 cred = google.auth.load_credentials_from_file(GOOGLE_APPLICATION_CREDENTIALS)
